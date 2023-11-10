@@ -25,7 +25,7 @@ const saveOptions = () => {
         {
             "dark-vowel": "#ff0000",
             "medium-vowel": "#8B0000",
-            "dark-voiced-consonant": "#00CED1",
+            "dark-voiced-consonant": "#0080FF",
             "nasal-consonant": "#DAA520",
             "approximant": "#9ACD32"
         },

@@ -2,7 +2,13 @@
 
 
 async function highlightText() {
-    const colorMap = {};
+    const colorMap = {
+        "dark-vowel": "#ff0000",
+        "medium-vowel": "#8B0000",
+        "dark-voiced-consonant": "#0080FF",
+        "nasal-consonant": "#DAA520",
+        "approximant": "#9ACD32"
+    };
     const PREFIX = "speech-highligher";
     const substringMap = {
         "ea": "bright-vowel",
@@ -29,9 +35,19 @@ async function highlightText() {
 
     await getSettings();
 
-    const compiledSubstringMap = {};
+    function makeSubstringCasePermutations(substring) {
+        const permutations = [substring, substring.toUpperCase()];
+        if (substring.length > 1) {
+            permutations.push(`${substring.slice(0,1).toUpperCase()}${substring.slice(1)}`);
+        }
+        return permutations;
+    }
+
+    const compiledSubstringMap = {"&nbsp;": "&nbsp;"};
     for (const [substring, className] of Object.entries(substringMap)) {
-        compiledSubstringMap[substring] = `<span class="${PREFIX}-${className}">${substring}</span>`
+        for (const casedSubstr of makeSubstringCasePermutations(substring)) {
+            compiledSubstringMap[casedSubstr] = `<span class="${PREFIX}-${className}">${casedSubstr}</span>`
+        }
     }
 
     const speechStyle = document.createElement("style");
@@ -56,14 +72,24 @@ async function highlightText() {
 
     function highlightString(text) {
         let newString = "";
+        let tagDepth = 0;
         while (text.length > 0) {
             let newSubstring = text[0];
             let charCount = 1;
-            for (let [substring, span] of Object.entries(compiledSubstringMap)) {
-                if (text.startsWith(substring)) {
-                    newSubstring = span;
-                    charCount = substring.length;
-                    break;
+
+            if (text.startsWith("<")) {
+                tagDepth++;
+            } else if (text.startsWith(">")) {
+                tagDepth--;
+            }
+
+            if (tagDepth === 0) {
+                for (let [substring, span] of Object.entries(compiledSubstringMap)) {
+                    if (text.startsWith(substring)) {
+                        newSubstring = span;
+                        charCount = substring.length;
+                        break;
+                    }
                 }
             }
             newString += newSubstring;
@@ -73,13 +99,13 @@ async function highlightText() {
     }
 
   for (const element of document.body.getElementsByTagName("*")) {
-    for (const child of [...element.children]) {
+    for (const child of [...element.children, element]) {
         if (child.className.startsWith && child.className.startsWith(PREFIX)) {
             continue;
         }
 
         const {innerHTML} = child;
-        if (innerHTML && innerHTML.indexOf("<") < 0) {
+        if (innerHTML && innerHTML.indexOf(PREFIX) < 0) {
             const newHtml = highlightString(innerHTML);
             if (innerHTML !== newHtml) {
                 child.innerHTML = newHtml;
