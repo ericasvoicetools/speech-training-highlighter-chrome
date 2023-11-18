@@ -44,8 +44,8 @@ for (const [english, IPA] of Object.entries(dictionary)) {
     }
     const last = attributedEnglish[attributedEnglish.length - 2] ?? [];
     if ((last[1] === "silent") || ipaIndex < ipaArray.length - 1) {
+        mismatch++;
         continue;
-        mismatch++
     }
 
     let html = "";
