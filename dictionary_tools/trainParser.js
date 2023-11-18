@@ -5,9 +5,6 @@ const dictionary = JSON.parse(file);
 const histograms = {};
 const ipaSymbols = new Set();
 
-//const ipaClassification = JSON.parse(fs.readFileSync("./data/en_us_ipa_classification.json", "utf8"));
-//const vowels = new Set("a", "e", "i", "o", "u", "y");
-
 for (const [english, ipa] of Object.entries(dictionary)) {
     const score = (ipaIndex, englishIndex) => {
         const ipaPosition = ipaIndex / Math.max(ipa.length - 1, 1);
@@ -19,15 +16,12 @@ for (const [english, ipa] of Object.entries(dictionary)) {
 
     let englishIndex = 0;
     for (const engChar of english) {
-        if (!engChar.match(/\w/)) {
-            continue;
-        }
         const engHistogram = histograms[engChar] ?? {};
         let ipaIndex = 0;
         for (const ipaChar of ipa) {
             ipaSymbols.add(ipaChar);
             const ipaKey = `/${ipaChar}/`;
-            const charScore = score(ipaIndex, englishIndex)
+            const charScore = score(ipaIndex, englishIndex);
             engHistogram[ipaKey] = (engHistogram[ipaKey] ?? 0) + charScore;
 
             const ipaHistogram = histograms[ipaKey] ?? {};
@@ -48,7 +42,7 @@ function scaleHistogram(histogram) {
         let total = [...Object.values(hist)].reduce((total, value) => total + value, 0);
         for (const [innerChar, value] of Object.entries(hist)) {
             const percentage = value * 100 / total;
-            if (percentage >= 1) {
+            if (percentage >= 0.1) {
                 innerScaled[innerChar] = percentage;
             }
         }
@@ -69,7 +63,7 @@ function crossMultiplyHistogram(histogram) {
     return crossedPriors;
 }
 
-const priors = scaleHistogram(scaleHistogram(crossMultiplyHistogram(histograms)))
+const priors = scaleHistogram(crossMultiplyHistogram(histograms))
 
 
 fs.writeFileSync("./data/en_us_priors.json", JSON.stringify(priors, null, 4), "utf8");
