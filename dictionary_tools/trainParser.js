@@ -3,7 +3,9 @@ const fs = require('fs');
 const file = fs.readFileSync("./data/en_us.json", "utf8");
 const dictionary = JSON.parse(file);
 const histograms = {};
-const ipaSymbols = new Set();
+
+const ipaClassification = JSON.parse(fs.readFileSync("./data/en_us_ipa_classification.json", "utf8"));
+const vowels = new Set(["a", "e", "i", "o", "u", "y"]);
 
 for (const [english, ipa] of Object.entries(dictionary)) {
     const score = (ipaIndex, englishIndex) => {
@@ -19,7 +21,21 @@ for (const [english, ipa] of Object.entries(dictionary)) {
         const engHistogram = histograms[engChar] ?? {};
         let ipaIndex = 0;
         for (const ipaChar of ipa) {
-            ipaSymbols.add(ipaChar);
+
+            if (ipaClassification[ipaChar].indexOf("vowel") >= 0) {
+                if (!vowels.has(engChar)) {
+                    ipaIndex++;
+                    continue;
+                }
+            }
+
+            if (ipaClassification[ipaChar].indexOf("consonant") >= 0) {
+                if (vowels.has(engChar)) {
+                    ipaIndex++;
+                    continue;
+                }
+            }
+
             const ipaKey = `/${ipaChar}/`;
             const charScore = score(ipaIndex, englishIndex);
             engHistogram[ipaKey] = (engHistogram[ipaKey] ?? 0) + charScore;
@@ -67,4 +83,3 @@ const priors = scaleHistogram(crossMultiplyHistogram(histograms))
 
 
 fs.writeFileSync("./data/en_us_priors.json", JSON.stringify(priors, null, 4), "utf8");
-fs.writeFileSync("./data/en_us_ipa_sounds.json", JSON.stringify([...ipaSymbols.keys()], null, 4), "utf8");
