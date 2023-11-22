@@ -8,5 +8,11 @@
   "background": {
     "service_worker": "highlighter.js"
   },
-  "options_page": "options.html"
+  "options_page": "options.html",
+  "web_accessible_resources": [{
+    "resources": ["en_us_replacements.json"],
+    "matches": ["<all_urls>"]
+  }
+    
+  ]
 }

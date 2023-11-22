@@ -27,7 +27,10 @@ const saveOptions = () => {
             "medium-vowel": "#8B0000",
             "dark-voiced-consonant": "#0080FF",
             "nasal-consonant": "#DAA520",
-            "approximant": "#9ACD32"
+            "approximant": "#9ACD32",
+            "bright-voiced-consonant": "#000000",
+            "voiceless-consonant": "#000000",
+            "bright-vowel": "#000000",
         },
       (items) => {
         for (const [key, value] of Object.entries(items)) {
