@@ -13,6 +13,7 @@ for (const [english, ipa] of Object.entries(dictionary)) {
         const englishPosition = englishIndex / Math.max(english.length - 1, 1);
         const diff = (ipaPosition - englishPosition) * english.length;
         const gaussedDiff = Math.exp(-(diff * diff) / 3);
+
         return gaussedDiff;
     }
 
@@ -21,7 +22,6 @@ for (const [english, ipa] of Object.entries(dictionary)) {
         const engHistogram = histograms[engChar] ?? {};
         let ipaIndex = 0;
         for (const ipaChar of ipa) {
-
             if (ipaClassification[ipaChar].indexOf("vowel") >= 0) {
                 if (!vowels.has(engChar)) {
                     ipaIndex++;
@@ -58,7 +58,7 @@ function scaleHistogram(histogram) {
         let total = [...Object.values(hist)].reduce((total, value) => total + value, 0);
         for (const [innerChar, value] of Object.entries(hist)) {
             const percentage = value * 100 / total;
-            if (percentage >= 0.1) {
+            if (percentage >= 0.01) {
                 innerScaled[innerChar] = percentage;
             }
         }

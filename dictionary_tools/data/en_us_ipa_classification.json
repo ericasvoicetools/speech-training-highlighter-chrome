@@ -1,13 +1,13 @@
 {
     "Ø": "silent",
 
-    "ɹ": "approximant-consonant",
+    "ɹ": "approximant",
     "j": "approximant",
-    "ɫ": "approximant-consonant",
-    "w": "approximant-consonant",
+    "ɫ": "approximant",
+    "w": "approximant",
     "ɝ": "approximant",
-    "hw": "approximant-consonant",
-    "lj": "approximant-consonant",
+    "hw": "approximant",
+    "ɫj": "approximant",
 
     "m": "bright-voiced-consonant",
     "n": "bright-voiced-consonant",

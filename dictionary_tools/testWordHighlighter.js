@@ -24,22 +24,21 @@ let mismatches = 0;
 let total = 0;
 
 function soundsForWord(english, verbose) {
-    const rawIpa = dictionary[english];
-    const ipa = ["Ø", ...rawIpa, "Ø"];
+    const rawIpa = dictionary[english] ?? [];
+    const ipa = [...rawIpa];
     const paddedEnglish = `^${english.toLowerCase()}$`;
     const attributedEnglish = [];
 
     for (let i = 0; i < english.length; i++) {
         let expectedSounds = ipaSet;
-        let ipaSlice = [];
-        if (rawIpa) {
-            const rawIpaPosition = i * rawIpa.length / english.length;
-            const ipaPosition = rawIpaPosition + 1;
-            ipaSlice = ipa.slice(
-                Math.max(0, Math.round(ipaPosition - 1.5)),
-                Math.min(ipa.length, Math.round(ipaPosition + 1.5))
-            );
-            expectedSounds = new Set(ipaSlice);
+        if (rawIpa.length > 0) {
+            expectedSounds = new Set(ipa.slice(0, 1));
+            expectedSounds.add("Ø");
+
+            const lastSound = attributedEnglish[attributedEnglish.length - 1];
+            if (lastSound) {
+                expectedSounds.add(attributedEnglish[lastSound])
+            }
         }
 
         substr = paddedEnglish.slice(i, i + 3);
@@ -53,7 +52,7 @@ function soundsForWord(english, verbose) {
                 dict: dictionary[english],
                 expectedSounds,
                 substr,
-                ipaSlice,
+                ipaSlice: ipa.slice(0, 3),
                 candidates
             })
         }
@@ -61,36 +60,59 @@ function soundsForWord(english, verbose) {
         let bestSound = "Ø";
         let bestLikelihood = 0;
         const middleCharPriors = singleCharPriors[substr[1]];
-        for (const sound of ipaSlice) {
-            const seqLikelihood = candidates[sound] ?? 0.1;
-            const charLikelihood = middleCharPriors[`/${sound}/`] ?? 0.1;
-            const curLikelihood = seqLikelihood + charLikelihood + seqLikelihood * charLikelihood;
+
+        let totalSeqLikelihood = 0;
+        let totalCharLikelihood = 0;
+
+        const likelihoods = [...expectedSounds].map(sound => {
+            const seqLikelihood = candidates[sound] ?? 0.01;
+            const charLikelihood = middleCharPriors[`/${sound}/`] ?? 0.01;
             
-            if (verbose) {
-                console.log({
-                    sound,
-                    seqLikelihood,
-                    middleCharPriors: middleCharPriors[`/${sound}/`],
-                    bestLikelihood,
-                    bestSound,
-                    curLikelihood,
-                    char: substr[1],
-                })
-            }
+            totalSeqLikelihood += seqLikelihood;
+            totalCharLikelihood += charLikelihood;
+
+            return { seqLikelihood, charLikelihood, sound };
+        });
+
+        if (verbose) {
+            console.log(likelihoods);
+        }
+
+        totalSeqLikelihood = Math.max(totalSeqLikelihood, 1);
+        totalCharLikelihood = Math.max(totalCharLikelihood, 1);
+
+        for (const { seqLikelihood, charLikelihood, sound } of likelihoods) {
+            const scaledSeqLikelihood = seqLikelihood / totalSeqLikelihood;
+            const scaledCharLikelihood = charLikelihood / totalCharLikelihood;
+
+            const curLikelihood = scaledSeqLikelihood +
+                scaledCharLikelihood +
+                scaledSeqLikelihood * scaledCharLikelihood;
+
+            /*console.log({
+                bestLikelihood,
+                curLikelihood,
+                bestSound,
+                sound
+            })*/
+            
             if (curLikelihood > bestLikelihood) {
                 bestLikelihood = curLikelihood;
                 bestSound = sound;
             }
         }
         attributedEnglish.push(bestSound);
+        const ipaSpliceIndex = ipa.indexOf(bestSound);
+        if (ipaSpliceIndex >= 0) {
+            ipa.splice(ipaSpliceIndex, 1);
+        }
     }
 
-    if (deDupString(ipa) !== deDupString(attributedEnglish)) {
+    if (deDupString(rawIpa) !== deDupString(attributedEnglish)) {
         console.log({
             english,
             attributedEnglish: attributedEnglish.join(""),
-            ipa: deDupString(ipa),
-            //reconstructedIpa: deDupString(attributedEnglish)
+            ipa: deDupString(rawIpa)
         });
         mismatches++;
     }
