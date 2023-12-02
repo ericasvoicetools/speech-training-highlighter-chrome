@@ -5,6 +5,7 @@ const priors = JSON.parse(fs.readFileSync("./data/en_us_priors_sequence.json", "
 const singleCharPriors = JSON.parse(fs.readFileSync("./data/en_us_priors.json", "utf8"));
 const allIpa = JSON.parse(fs.readFileSync("./data/en_us_ipa_sounds.json", "utf8"));
 const ipaSet = new Set(allIpa);
+const ipaClassification = JSON.parse(fs.readFileSync("./data/en_us_ipa_classification.json", "utf8"));
 
 const unknownSequencePriors = Object.fromEntries(allIpa.map(x => [x, 0]));
 
@@ -23,7 +24,8 @@ function deDupString(str) {
 let mismatches = 0;
 let total = 0;
 
-function soundsForWord(english, verbose) {
+function soundsForWord(rawEnglish, verbose) {
+    const english = rawEnglish.toLowerCase();
     const rawIpa = dictionary[english] ?? [];
     const ipa = [...rawIpa];
     const paddedEnglish = `^${english.toLowerCase()}$`;
@@ -108,7 +110,9 @@ function soundsForWord(english, verbose) {
         }
     }
 
-    if (deDupString(rawIpa) !== deDupString(attributedEnglish)) {
+    return attributedEnglish;
+
+    /*if (deDupString(rawIpa) !== deDupString(attributedEnglish)) {
         console.log({
             english,
             attributedEnglish: attributedEnglish.join(""),
@@ -116,16 +120,58 @@ function soundsForWord(english, verbose) {
         });
         mismatches++;
     }
-    total++;
+    total++;*/
 }
 
-if (process.argv[2]) {
-    soundsForWord(process.argv[2] ?? "", true);
-} else {
-    for (const word of Object.keys(dictionary)) {
-        soundsForWord(word);
+
+const colorMapConsole = {
+    "dark-vowel": "31",
+    "medium-vowel": "31",
+    "dark-voiced-consonant": "34",
+    "nasal-consonant": "33",
+    "approximant": "32",
+    "bright-voiced-consonant": "37",
+    "voiceless-consonant": "37",
+    "bright-vowel": "37",
+    "silent": "37",
+};
+
+function tagColorConsole(color, word) {
+    console.log(color)
+    return `\u001b[${colorMapConsole[color]}m${word}`
+}
+
+function classifyRuns(english) {
+    ipa = soundsForWord(english);
+    const runs = [];
+    let currentRun = {};
+    console.log(ipa, english);
+    for (let i = 0; i < ipa.length; i++) {
+        const sound = ipaClassification[ipa[i]];
+        if (sound === currentRun.sound) {
+            currentRun.length++;
+            currentRun.text += english[i];
+        } else {
+            currentRun = {
+                sound,
+                length: 1,
+                text: english[i]
+            }
+            runs.push(currentRun);
+        }
     }
+    return runs;
 }
 
+function highlightWord(word) {
+    const runs = classifyRuns(word);
+    let highlighted = "";
 
-console.log(`${mismatches} out of ${total}`)
+    for (const { sound, text } of runs) {
+        highlighted += tagColorConsole(sound, text);
+    }
+    
+    return highlighted;
+}
+
+console.log(highlightWord(process.argv[2] ?? "color"));
