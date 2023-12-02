@@ -9,6 +9,7 @@ async function highlightText() {
         "bright-voiced-consonant": "#000000",
         "voiceless-consonant": "#000000",
         "bright-vowel": "#000000",
+        "silent": "#000000"
     };
     const PREFIX = "speech-highligher";
 

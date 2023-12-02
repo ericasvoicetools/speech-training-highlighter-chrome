@@ -31,6 +31,7 @@ const saveOptions = () => {
             "bright-voiced-consonant": "#000000",
             "voiceless-consonant": "#000000",
             "bright-vowel": "#000000",
+            "silent": "#000000"
         },
       (items) => {
         for (const [key, value] of Object.entries(items)) {
