@@ -39,7 +39,7 @@ function soundsForWord(rawEnglish, verbose) {
 
             const lastSound = attributedEnglish[attributedEnglish.length - 1];
             if (lastSound) {
-                expectedSounds.add(attributedEnglish[lastSound])
+                expectedSounds.add(lastSound);
             }
         }
 
@@ -175,3 +175,5 @@ function highlightWord(word) {
 }
 
 console.log(highlightWord(process.argv[2] ?? "color"));
+
+//console.log(soundsForWord(process.argv[2] ?? "color", true))
