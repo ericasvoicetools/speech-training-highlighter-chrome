@@ -10,7 +10,12 @@
   },
   "options_page": "options.html",
   "web_accessible_resources": [{
-    "resources": ["en_us_replacements.json"],
+    "resources": [
+      "data/en_us.json",
+      "data/en_us_priors.json",
+      "data/en_us_priors_sequence.json",
+      "data/en_us_ipa_classification.json"
+    ],
     "matches": ["<all_urls>"]
   }
     

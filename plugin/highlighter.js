@@ -19,8 +19,138 @@ async function highlightText() {
 
     await getSettings();
 
-    const dictionaryFile = chrome.runtime.getURL("en_us_replacements.json");
-    const dictionary = await (await fetch(dictionaryFile)).json();
+    async function readFileAsJson(filename) {
+        const file = await chrome.runtime.getURL(filename);
+        const json = await (await fetch(file)).json();
+        return json;
+    }
+
+    const dictionary = await readFileAsJson("data/en_us.json");
+    const priors = await readFileAsJson("data/en_us_priors_sequence.json");
+    const singleCharPriors = await readFileAsJson("data/en_us_priors.json");
+    const ipaClassification = await readFileAsJson("data/en_us_ipa_classification.json");
+    const ipaSet = new Set(Object.keys(ipaClassification));
+
+    const unknownSequencePriors = Object.fromEntries([...ipaSet.keys()].map(x => [x, 0]));
+    
+    function soundsForWord(rawEnglish, verbose) {
+        const english = rawEnglish.toLowerCase();
+        const rawIpa = dictionary[english] ?? [];
+        const ipa = [...rawIpa];
+        const paddedEnglish = `^${english.toLowerCase()}$`;
+        const attributedEnglish = [];
+    
+        for (let i = 0; i < english.length; i++) {
+            let expectedSounds = ipaSet;
+            if (rawIpa.length > 0) {
+                expectedSounds = new Set(ipa.slice(0, 1));
+                expectedSounds.add("Ø");
+    
+                const lastSound = attributedEnglish[attributedEnglish.length - 1];
+                if (lastSound) {
+                    expectedSounds.add(lastSound);
+                }
+            }
+    
+            substr = paddedEnglish.slice(i, i + 3);
+            const candidates = Object.fromEntries(Object.entries(priors[substr] ?? unknownSequencePriors).filter(
+                entry => expectedSounds.has(entry[0])
+            ));
+    
+            if (verbose) {
+                console.log({
+                    paddedEnglish,
+                    dict: dictionary[english],
+                    expectedSounds,
+                    substr,
+                    ipaSlice: ipa.slice(0, 3),
+                    candidates
+                })
+            }
+    
+            let bestSound = "Ø";
+            let bestLikelihood = 0;
+            const middleCharPriors = singleCharPriors[substr[1]];
+    
+            let totalSeqLikelihood = 0;
+            let totalCharLikelihood = 0;
+    
+            const likelihoods = [...expectedSounds].map(sound => {
+                const seqLikelihood = candidates[sound] ?? 0;
+                const charLikelihood = middleCharPriors[`/${sound}/`] ?? 0;
+                
+                totalSeqLikelihood += seqLikelihood;
+                totalCharLikelihood += charLikelihood;
+    
+                return { seqLikelihood, charLikelihood, sound };
+            });
+    
+            if (verbose) {
+                console.log(likelihoods);
+            }
+    
+            totalSeqLikelihood = Math.max(totalSeqLikelihood, 1);
+            totalCharLikelihood = Math.max(totalCharLikelihood, 1);
+    
+            for (const { seqLikelihood, charLikelihood, sound } of likelihoods) {
+                const scaledSeqLikelihood = seqLikelihood / totalSeqLikelihood;
+                const scaledCharLikelihood = charLikelihood / totalCharLikelihood;
+    
+                const curLikelihood = scaledSeqLikelihood +
+                    scaledCharLikelihood +
+                    scaledSeqLikelihood * scaledCharLikelihood;
+                
+                if (curLikelihood > bestLikelihood) {
+                    bestLikelihood = curLikelihood;
+                    bestSound = sound;
+                }
+            }
+            attributedEnglish.push(bestSound);
+            const ipaSpliceIndex = ipa.indexOf(bestSound);
+            if (ipaSpliceIndex >= 0) {
+                ipa.splice(ipaSpliceIndex, 1);
+            }
+        }
+    
+        return attributedEnglish;
+    }
+
+    function tagColorHtml(sound, text) {
+        return `<span class=speech-highligher-${sound}>${text}</span>`
+    }
+    
+    function classifyRuns(english) {
+        ipa = soundsForWord(english, true);
+        const runs = [];
+        let currentRun = {};
+        console.log(ipa, english);
+        for (let i = 0; i < ipa.length; i++) {
+            const sound = ipaClassification[ipa[i]];
+            if (sound === currentRun.sound) {
+                currentRun.length++;
+                currentRun.text += english[i];
+            } else {
+                currentRun = {
+                    sound,
+                    length: 1,
+                    text: english[i]
+                }
+                runs.push(currentRun);
+            }
+        }
+        return runs;
+    }
+    
+    function highlightWord(word) {
+        const runs = classifyRuns(word);
+        let highlighted = "";
+    
+        for (const { sound, text } of runs) {
+            highlighted += tagColorHtml(sound, text);
+        }
+    
+        return highlighted;
+    }
 
     const speechStyle = document.createElement("style");
     speechStyle.id = PREFIX;
@@ -44,9 +174,9 @@ async function highlightText() {
 
     const ampcodePattern = `(&\\w+;)`;
     const tagPattern = "(\\<.*\\>)";
-    const nonwordPattern = "(\\W)";
-    const wordPattern = "(\\w+)";
-    const wordRegexp = new RegExp("^(\\w+)");
+    const nonwordPattern = "([^a-zA-Z])";
+    const wordPattern = "([A-Za-z]+)";
+    const wordRegexp = new RegExp("^([A-Za-z]+)");
     
     const parseRegex = new RegExp([ampcodePattern, tagPattern, nonwordPattern, wordPattern].join("|"), "gm");
     
@@ -55,8 +185,9 @@ async function highlightText() {
     
         for (const group of text.matchAll(parseRegex)) {
             const parseBlock = group[0];
+            console.log(parseBlock);
             if (wordRegexp.test(parseBlock)) {
-                newString += dictionary[parseBlock.toLowerCase()] ?? parseBlock;
+                newString += highlightWord(parseBlock);
             } else {
                 newString += parseBlock;
             }
@@ -74,20 +205,18 @@ async function highlightText() {
     ...document.body.getElementsByTagName("ul"),
   ]
   for (const element of elements) {
-    for (const child of [...element.children, element]) {
-        if (child.className.startsWith && child.className.startsWith(PREFIX)) {
-            continue;
-        }
+    if (element.className.startsWith && element.className.startsWith(PREFIX)) {
+        continue;
+    }
 
-        const {innerHTML} = child;
-        if (innerHTML && innerHTML.indexOf(PREFIX) < 0) {
-            const newHtml = highlightString(innerHTML);
-            if (innerHTML !== newHtml) {
-                child.innerHTML = newHtml;
-            }
+    const {innerHTML} = element;
+    if (innerHTML && innerHTML.indexOf(PREFIX) < 0) {
+        const newHtml = highlightString(innerHTML);
+        if (innerHTML !== newHtml) {
+            element.innerHTML = newHtml;
         }
     }
-  }
+    }
   console.log("Done")
 }
 

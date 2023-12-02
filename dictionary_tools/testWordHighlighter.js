@@ -21,8 +21,8 @@ function deDupString(str) {
     return deDupped;
 }
 
-let mismatches = 0;
-let total = 0;
+//let mismatches = 0;
+//let total = 0;
 
 function soundsForWord(rawEnglish, verbose) {
     const english = rawEnglish.toLowerCase();
@@ -137,8 +137,11 @@ const colorMapConsole = {
 };
 
 function tagColorConsole(sound, text) {
-    console.log(sound)
     return `\u001b[${colorMapConsole[sound]}m${text}`
+}
+
+function tagColorHtml(sound, text) {
+    return `<span class=speech-highligher-${sound}>${text}</span>`
 }
 
 function classifyRuns(english) {
