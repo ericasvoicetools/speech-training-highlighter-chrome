@@ -136,9 +136,9 @@ const colorMapConsole = {
     "silent": "37",
 };
 
-function tagColorConsole(color, word) {
-    console.log(color)
-    return `\u001b[${colorMapConsole[color]}m${word}`
+function tagColorConsole(sound, text) {
+    console.log(sound)
+    return `\u001b[${colorMapConsole[sound]}m${text}`
 }
 
 function classifyRuns(english) {
@@ -170,7 +170,7 @@ function highlightWord(word) {
     for (const { sound, text } of runs) {
         highlighted += tagColorConsole(sound, text);
     }
-    
+
     return highlighted;
 }
 
