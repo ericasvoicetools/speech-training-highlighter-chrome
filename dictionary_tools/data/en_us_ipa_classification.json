@@ -26,6 +26,7 @@
     "ŋ": "nasal-consonant",
 
     "t": "voiceless-consonant",
+    "ks": "voiceless-consonant",
     "k": "voiceless-consonant",
     "s": "voiceless-consonant",
     "f": "voiceless-consonant",
@@ -47,10 +48,13 @@
     "eɪ": "bright-vowel",
 
     "ə": "medium-vowel",
+    "jə": "medium-vowel",
     "aʊ": "medium-vowel",
     "ɔɪ": "medium-vowel",
 
     "ɔ": "dark-vowel",
+    "ju": "dark-vowel",
+    "jʊ": "dark-vowel",
     "u": "dark-vowel",
     "ʊ": "dark-vowel",
     "o": "dark-vowel",

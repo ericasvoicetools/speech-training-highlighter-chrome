@@ -65,8 +65,8 @@ function soundsForWord(english, verbose) {
         let totalCharLikelihood = 0;
 
         const likelihoods = [...expectedSounds].map(sound => {
-            const seqLikelihood = candidates[sound] ?? 0.01;
-            const charLikelihood = middleCharPriors[`/${sound}/`] ?? 0.01;
+            const seqLikelihood = candidates[sound] ?? 0;
+            const charLikelihood = middleCharPriors[`/${sound}/`] ?? 0;
             
             totalSeqLikelihood += seqLikelihood;
             totalCharLikelihood += charLikelihood;
