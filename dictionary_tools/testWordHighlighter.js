@@ -24,6 +24,25 @@ function deDupString(str) {
 //let mismatches = 0;
 //let total = 0;
 
+function getPriorsForSlice(slice, expectedSounds) {
+    const slicePriors = {};
+
+    for (const sound of expectedSounds) {
+        slicePriors[sound] = 0;
+    }
+
+    const slices = (slice.includes("^") || slice.includes("$")) ? [slice] : [slice, `^${slice.slice(1)}`, `${slice.slice(0, 2)}$`];
+
+    for (substr of slices) {
+        const subPriors = priors[substr] ?? {};
+        for (const sound of expectedSounds) {
+            slicePriors[sound] += subPriors[sound] ?? 0;
+        }
+    }
+    
+    return slicePriors;
+}
+
 function soundsForWord(rawEnglish, verbose) {
     const english = rawEnglish.toLowerCase();
     const rawIpa = dictionary[english] ?? [];
@@ -38,15 +57,14 @@ function soundsForWord(rawEnglish, verbose) {
             expectedSounds.add("Ø");
 
             const lastSound = attributedEnglish[attributedEnglish.length - 1];
-            if (lastSound) {
+            const soundBeforeLast = attributedEnglish[attributedEnglish.length - 2];
+            if (lastSound && lastSound !== soundBeforeLast) {
                 expectedSounds.add(lastSound);
             }
         }
 
         substr = paddedEnglish.slice(i, i + 3);
-        const candidates = Object.fromEntries(Object.entries(priors[substr] ?? unknownSequencePriors).filter(
-            entry => expectedSounds.has(entry[0])
-        ));
+        const candidates = getPriorsForSlice(substr, expectedSounds);
 
         if (verbose) {
             console.log({

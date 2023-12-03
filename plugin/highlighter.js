@@ -33,30 +33,48 @@ async function highlightText() {
 
     const unknownSequencePriors = Object.fromEntries([...ipaSet.keys()].map(x => [x, 0]));
     
+    function getPriorsForSlice(slice, expectedSounds) {
+        const slicePriors = {};
+
+        for (const sound of expectedSounds) {
+            slicePriors[sound] = 0;
+        }
+
+        const slices = (slice.includes("^") || slice.includes("$")) ? [slice] : [slice, `^${slice.slice(1)}`, `${slice.slice(0, 2)}$`];
+
+        for (substr of slices) {
+            const subPriors = priors[substr] ?? {};
+            for (const sound of expectedSounds) {
+                slicePriors[sound] += subPriors[sound] ?? 0;
+            }
+        }
+        
+        return slicePriors;
+    }
+
     function soundsForWord(rawEnglish, verbose) {
         const english = rawEnglish.toLowerCase();
         const rawIpa = dictionary[english] ?? [];
         const ipa = [...rawIpa];
         const paddedEnglish = `^${english.toLowerCase()}$`;
         const attributedEnglish = [];
-    
+
         for (let i = 0; i < english.length; i++) {
             let expectedSounds = ipaSet;
             if (rawIpa.length > 0) {
                 expectedSounds = new Set(ipa.slice(0, 1));
                 expectedSounds.add("Ø");
-    
+
                 const lastSound = attributedEnglish[attributedEnglish.length - 1];
-                if (lastSound) {
+                const soundBeforeLast = attributedEnglish[attributedEnglish.length - 2];
+                if (lastSound && lastSound !== soundBeforeLast) {
                     expectedSounds.add(lastSound);
                 }
             }
-    
+
             substr = paddedEnglish.slice(i, i + 3);
-            const candidates = Object.fromEntries(Object.entries(priors[substr] ?? unknownSequencePriors).filter(
-                entry => expectedSounds.has(entry[0])
-            ));
-    
+            const candidates = getPriorsForSlice(substr, expectedSounds);
+
             if (verbose) {
                 console.log({
                     paddedEnglish,
@@ -67,38 +85,45 @@ async function highlightText() {
                     candidates
                 })
             }
-    
+
             let bestSound = "Ø";
             let bestLikelihood = 0;
             const middleCharPriors = singleCharPriors[substr[1]];
-    
+
             let totalSeqLikelihood = 0;
             let totalCharLikelihood = 0;
-    
+
             const likelihoods = [...expectedSounds].map(sound => {
                 const seqLikelihood = candidates[sound] ?? 0;
                 const charLikelihood = middleCharPriors[`/${sound}/`] ?? 0;
                 
                 totalSeqLikelihood += seqLikelihood;
                 totalCharLikelihood += charLikelihood;
-    
+
                 return { seqLikelihood, charLikelihood, sound };
             });
-    
+
             if (verbose) {
                 console.log(likelihoods);
             }
-    
+
             totalSeqLikelihood = Math.max(totalSeqLikelihood, 1);
             totalCharLikelihood = Math.max(totalCharLikelihood, 1);
-    
+
             for (const { seqLikelihood, charLikelihood, sound } of likelihoods) {
                 const scaledSeqLikelihood = seqLikelihood / totalSeqLikelihood;
                 const scaledCharLikelihood = charLikelihood / totalCharLikelihood;
-    
+
                 const curLikelihood = scaledSeqLikelihood +
                     scaledCharLikelihood +
                     scaledSeqLikelihood * scaledCharLikelihood;
+
+                /*console.log({
+                    bestLikelihood,
+                    curLikelihood,
+                    bestSound,
+                    sound
+                })*/
                 
                 if (curLikelihood > bestLikelihood) {
                     bestLikelihood = curLikelihood;
@@ -111,8 +136,18 @@ async function highlightText() {
                 ipa.splice(ipaSpliceIndex, 1);
             }
         }
-    
+
         return attributedEnglish;
+
+        /*if (deDupString(rawIpa) !== deDupString(attributedEnglish)) {
+            console.log({
+                english,
+                attributedEnglish: attributedEnglish.join(""),
+                ipa: deDupString(rawIpa)
+            });
+            mismatches++;
+        }
+        total++;*/
     }
 
     function tagColorHtml(sound, text) {
