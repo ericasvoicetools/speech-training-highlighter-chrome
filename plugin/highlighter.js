@@ -120,10 +120,9 @@ async function highlightText() {
     }
     
     function classifyRuns(english) {
-        ipa = soundsForWord(english, true);
+        ipa = soundsForWord(english);
         const runs = [];
         let currentRun = {};
-        console.log(ipa, english);
         for (let i = 0; i < ipa.length; i++) {
             const sound = ipaClassification[ipa[i]];
             if (sound === currentRun.sound) {
@@ -173,9 +172,9 @@ async function highlightText() {
     }
 
     const ampcodePattern = `(&\\w+;)`;
-    const tagPattern = "(\\<.*\\>)";
-    const nonwordPattern = "([^a-zA-Z])";
-    const wordPattern = "([A-Za-z]+)";
+    const tagPattern = "(\\<.*?\\>)";
+    const nonwordPattern = "([^a-zA-Z\-'])";
+    const wordPattern = "([A-Za-z\-']+)";
     const wordRegexp = new RegExp("^([A-Za-z]+)");
     
     const parseRegex = new RegExp([ampcodePattern, tagPattern, nonwordPattern, wordPattern].join("|"), "gm");
@@ -185,7 +184,6 @@ async function highlightText() {
     
         for (const group of text.matchAll(parseRegex)) {
             const parseBlock = group[0];
-            console.log(parseBlock);
             if (wordRegexp.test(parseBlock)) {
                 newString += highlightWord(parseBlock);
             } else {
@@ -196,15 +194,13 @@ async function highlightText() {
         return newString;
     }
 
-  const elements = [
-    ...document.body.getElementsByTagName("p"),
-    ...document.body.getElementsByTagName("P"),
-    ...document.body.getElementsByTagName("h*"),
-    ...document.body.getElementsByTagName("H*"),
-    ...document.body.getElementsByTagName("ol"),
-    ...document.body.getElementsByTagName("ul"),
-  ]
-  for (const element of elements) {
+
+    const tags = [
+        "p", "div", "td", "ol", "ul",
+        "h1", "h2", "h3", "h4", "h5", "h6"
+    ];
+
+  for (const element of document.body.querySelectorAll(tags, tags.map(x => x.toUpperCase()))) {
     if (element.className.startsWith && element.className.startsWith(PREFIX)) {
         continue;
     }
@@ -217,7 +213,7 @@ async function highlightText() {
         }
     }
     }
-  console.log("Done")
+  console.log("Done.")
 }
 
 chrome.action.onClicked.addListener((tab) => {
