@@ -4,8 +4,7 @@ const file = fs.readFileSync("./data/en_us.json", "utf8");
 const dictionary = JSON.parse(file);
 const histograms = {};
 
-const ipaClassification = JSON.parse(fs.readFileSync("./data/en_us_ipa_classification.json", "utf8"));
-const vowels = new Set(["a", "e", "i", "o", "u", "y"]);
+const staticRules = JSON.parse(fs.readFileSync("./data/en_us_static_rules.json"));
 
 for (const [english, ipa] of Object.entries(dictionary)) {
     const score = (ipaIndex, englishIndex) => {
@@ -19,21 +18,13 @@ for (const [english, ipa] of Object.entries(dictionary)) {
 
     let englishIndex = 0;
     for (const engChar of english) {
+        const validSounds = new Set(staticRules[engChar]);
         const engHistogram = histograms[engChar] ?? {};
+
         let ipaIndex = 0;
         for (const ipaChar of ipa) {
-            if (ipaClassification[ipaChar].indexOf("vowel") >= 0) {
-                if (!vowels.has(engChar)) {
-                    ipaIndex++;
-                    continue;
-                }
-            }
-
-            if (ipaClassification[ipaChar].indexOf("consonant") >= 0) {
-                if (vowels.has(engChar)) {
-                    ipaIndex++;
-                    continue;
-                }
+            if (!validSounds.has(ipaChar)) {
+                continue;
             }
 
             const ipaKey = `/${ipaChar}/`;

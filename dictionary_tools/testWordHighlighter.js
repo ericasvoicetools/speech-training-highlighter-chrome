@@ -43,9 +43,9 @@ function getPriorsForSlice(slice, expectedSounds) {
     return slicePriors;
 }
 
-function soundsForWord(rawEnglish, verbose) {
+function soundsForWord(rawEnglish, dontUseDictionary) {
     const english = rawEnglish.toLowerCase();
-    const rawIpa = dictionary[english] ?? [];
+    const rawIpa = dontUseDictionary ? [] : dictionary[english] ?? [];
     const ipa = [...rawIpa];
     const paddedEnglish = `^${english.toLowerCase()}$`;
     const attributedEnglish = [];
@@ -66,17 +66,6 @@ function soundsForWord(rawEnglish, verbose) {
         substr = paddedEnglish.slice(i, i + 3);
         const candidates = getPriorsForSlice(substr, expectedSounds);
 
-        if (verbose) {
-            console.log({
-                paddedEnglish,
-                dict: dictionary[english],
-                expectedSounds,
-                substr,
-                ipaSlice: ipa.slice(0, 3),
-                candidates
-            })
-        }
-
         let bestSound = "Ø";
         let bestLikelihood = 0;
         const middleCharPriors = singleCharPriors[substr[1]];
@@ -94,10 +83,6 @@ function soundsForWord(rawEnglish, verbose) {
             return { seqLikelihood, charLikelihood, sound };
         });
 
-        if (verbose) {
-            console.log(likelihoods);
-        }
-
         totalSeqLikelihood = Math.max(totalSeqLikelihood, 1);
         totalCharLikelihood = Math.max(totalCharLikelihood, 1);
 
@@ -108,13 +93,6 @@ function soundsForWord(rawEnglish, verbose) {
             const curLikelihood = scaledSeqLikelihood +
                 scaledCharLikelihood +
                 scaledSeqLikelihood * scaledCharLikelihood;
-
-            /*console.log({
-                bestLikelihood,
-                curLikelihood,
-                bestSound,
-                sound
-            })*/
             
             if (curLikelihood > bestLikelihood) {
                 bestLikelihood = curLikelihood;
@@ -128,17 +106,12 @@ function soundsForWord(rawEnglish, verbose) {
         }
     }
 
-    return attributedEnglish;
-
-    /*if (deDupString(rawIpa) !== deDupString(attributedEnglish)) {
-        console.log({
-            english,
-            attributedEnglish: attributedEnglish.join(""),
-            ipa: deDupString(rawIpa)
-        });
-        mismatches++;
+    if (ipa.length > 0) {
+        console.log("fallback")
+        return soundsForWord(rawEnglish, true);
     }
-    total++;*/
+
+    return attributedEnglish;
 }
 
 

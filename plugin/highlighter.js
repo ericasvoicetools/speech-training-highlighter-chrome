@@ -52,78 +52,56 @@ async function highlightText() {
         return slicePriors;
     }
 
-    function soundsForWord(rawEnglish, verbose) {
+    function soundsForWord(rawEnglish, dontUseDictionary) {
         const english = rawEnglish.toLowerCase();
-        const rawIpa = dictionary[english] ?? [];
+        const rawIpa = dontUseDictionary ? [] : dictionary[english] ?? [];
         const ipa = [...rawIpa];
         const paddedEnglish = `^${english.toLowerCase()}$`;
         const attributedEnglish = [];
-
+    
         for (let i = 0; i < english.length; i++) {
             let expectedSounds = ipaSet;
             if (rawIpa.length > 0) {
                 expectedSounds = new Set(ipa.slice(0, 1));
                 expectedSounds.add("Ø");
-
+    
                 const lastSound = attributedEnglish[attributedEnglish.length - 1];
                 const soundBeforeLast = attributedEnglish[attributedEnglish.length - 2];
                 if (lastSound && lastSound !== soundBeforeLast) {
                     expectedSounds.add(lastSound);
                 }
             }
-
+    
             substr = paddedEnglish.slice(i, i + 3);
             const candidates = getPriorsForSlice(substr, expectedSounds);
-
-            if (verbose) {
-                console.log({
-                    paddedEnglish,
-                    dict: dictionary[english],
-                    expectedSounds,
-                    substr,
-                    ipaSlice: ipa.slice(0, 3),
-                    candidates
-                })
-            }
-
+    
             let bestSound = "Ø";
             let bestLikelihood = 0;
             const middleCharPriors = singleCharPriors[substr[1]];
-
+    
             let totalSeqLikelihood = 0;
             let totalCharLikelihood = 0;
-
+    
             const likelihoods = [...expectedSounds].map(sound => {
                 const seqLikelihood = candidates[sound] ?? 0;
                 const charLikelihood = middleCharPriors[`/${sound}/`] ?? 0;
                 
                 totalSeqLikelihood += seqLikelihood;
                 totalCharLikelihood += charLikelihood;
-
+    
                 return { seqLikelihood, charLikelihood, sound };
             });
-
-            if (verbose) {
-                console.log(likelihoods);
-            }
-
+    
             totalSeqLikelihood = Math.max(totalSeqLikelihood, 1);
             totalCharLikelihood = Math.max(totalCharLikelihood, 1);
-
+    
             for (const { seqLikelihood, charLikelihood, sound } of likelihoods) {
                 const scaledSeqLikelihood = seqLikelihood / totalSeqLikelihood;
                 const scaledCharLikelihood = charLikelihood / totalCharLikelihood;
-
+    
                 const curLikelihood = scaledSeqLikelihood +
                     scaledCharLikelihood +
                     scaledSeqLikelihood * scaledCharLikelihood;
-
-                /*console.log({
-                    bestLikelihood,
-                    curLikelihood,
-                    bestSound,
-                    sound
-                })*/
                 
                 if (curLikelihood > bestLikelihood) {
                     bestLikelihood = curLikelihood;
@@ -136,18 +114,12 @@ async function highlightText() {
                 ipa.splice(ipaSpliceIndex, 1);
             }
         }
-
-        return attributedEnglish;
-
-        /*if (deDupString(rawIpa) !== deDupString(attributedEnglish)) {
-            console.log({
-                english,
-                attributedEnglish: attributedEnglish.join(""),
-                ipa: deDupString(rawIpa)
-            });
-            mismatches++;
+    
+        if (ipa.length > 0) {
+            return soundsForWord(rawEnglish, true);
         }
-        total++;*/
+    
+        return attributedEnglish;
     }
 
     function tagColorHtml(sound, text) {

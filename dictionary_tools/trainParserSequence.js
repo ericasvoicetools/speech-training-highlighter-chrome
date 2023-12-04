@@ -4,6 +4,8 @@ const file = fs.readFileSync("./data/en_us.json", "utf8");
 const dictionary = JSON.parse(file);
 const histograms = {};
 
+const staticRules = JSON.parse(fs.readFileSync("./data/en_us_static_rules.json"));
+
 for (const [rawEnglish, rawIpa] of Object.entries(dictionary)) {
     const english = `^${rawEnglish}$`
     const ipa = [...rawIpa, "Ø"];
@@ -19,9 +21,15 @@ for (const [rawEnglish, rawIpa] of Object.entries(dictionary)) {
 
     for (let englishIndex = 0; englishIndex < rawEnglish.length; englishIndex++) {
         const engSubstr = english.slice(englishIndex, englishIndex + 3);
+        const validSounds = new Set(staticRules[engSubstr[1]]);
         const engHistogram = histograms[engSubstr] ?? {};
         let ipaIndex = 0;
         for (const ipaChar of ipa) {
+            if (!validSounds.has(ipaChar)) {
+                ipaIndex++;
+                continue;
+            }
+
             const ipaKey = `/${ipaChar}/`;
 
             const charScore = score(ipaIndex, englishIndex, engSubstr, ipaKey);
