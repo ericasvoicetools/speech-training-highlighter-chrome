@@ -42,7 +42,6 @@ for (const [rawEnglish, rawIpa] of Object.entries(dictionary)) {
             ipaIndex++;
         }
         histograms[engSubstr] = engHistogram;
-        englishIndex++;
     }
 }
 

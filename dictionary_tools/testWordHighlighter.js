@@ -107,7 +107,7 @@ function soundsForWord(rawEnglish, dontUseDictionary) {
     }
 
     if (ipa.length > 0) {
-        console.log("fallback")
+        console.log("fallback", attributedEnglish)
         return soundsForWord(rawEnglish, true);
     }
 
