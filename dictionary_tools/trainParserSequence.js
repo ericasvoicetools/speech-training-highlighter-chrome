@@ -55,8 +55,8 @@ function scaleHistogram(histogram) {
         let total = [...Object.values(hist)].reduce((total, value) => total + value, 0);
         for (const [innerChar, value] of Object.entries(hist)) {
             const percentage = value * 100 / total;
-            if (percentage >= 0.01) {
-                innerScaled[innerChar] = percentage;
+            if (percentage >= 0.5) {
+                innerScaled[innerChar] = Math.round(percentage);
             }
         }
         if ([...Object.keys(innerScaled)].length > 0) {
@@ -66,7 +66,15 @@ function scaleHistogram(histogram) {
     return scaled;
 }
 
-const priors = scaleHistogram(histograms)
+const priors = scaleHistogram(histograms);
 
+let formattedOutput = "{\n";
+for (const key of [...Object.keys(priors)].sort()) {
+    if (formattedOutput.length > 3) {
+        formattedOutput += ",\n"
+    }
+    formattedOutput += `\t"${key}": ${JSON.stringify(priors[key])}`;
+}
+formattedOutput += "\n}\n";
 
-fs.writeFileSync("./data/en_us_priors_sequence.json", JSON.stringify(priors, null, 4), "utf8");
+fs.writeFileSync("./data/en_us_priors_sequence.json", formattedOutput, "utf8");

@@ -34,4 +34,13 @@ for (const line of lines) {
     }
 }
 
-fs.writeFileSync("./data/en_us.json", JSON.stringify(json, null, 4), "utf8");
+let formattedOutput = "{\n";
+for (const key of [...Object.keys(json)].sort()) {
+    if (formattedOutput.length > 3) {
+        formattedOutput += ",\n"
+    }
+    formattedOutput += `\t"${key}": ${JSON.stringify(json[key])}`;
+}
+formattedOutput += "\n}\n";
+
+fs.writeFileSync("./data/en_us.json", formattedOutput, "utf8");
