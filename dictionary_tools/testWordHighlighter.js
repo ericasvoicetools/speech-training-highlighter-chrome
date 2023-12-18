@@ -21,8 +21,8 @@ function deDupString(str) {
     return deDupped;
 }
 
-//let mismatches = 0;
-//let total = 0;
+let mismatches = 0;
+let total = 0;
 
 function getPriorsForSlice(slice, expectedSounds) {
     const slicePriors = {};
@@ -57,8 +57,7 @@ function soundsForWord(rawEnglish, dontUseDictionary) {
             expectedSounds.add("Ø");
 
             const lastSound = attributedEnglish[attributedEnglish.length - 1];
-            const soundBeforeLast = attributedEnglish[attributedEnglish.length - 2];
-            if (lastSound && lastSound !== soundBeforeLast) {
+            if (lastSound && ipa.length < (english.length - i)) {
                 expectedSounds.add(lastSound);
             }
         }
@@ -107,7 +106,8 @@ function soundsForWord(rawEnglish, dontUseDictionary) {
     }
 
     if (ipa.length > 0) {
-        console.log("fallback", attributedEnglish)
+        console.log("fallback", {rawEnglish, attributedEnglish})
+        mismatches++;
         return soundsForWord(rawEnglish, true);
     }
 
@@ -139,7 +139,6 @@ function classifyRuns(english) {
     ipa = soundsForWord(english);
     const runs = [];
     let currentRun = {};
-    console.log(ipa, english);
     for (let i = 0; i < ipa.length; i++) {
         const sound = ipaClassification[ipa[i]];
         if (sound === currentRun.sound) {
@@ -168,6 +167,14 @@ function highlightWord(word) {
     return highlighted;
 }
 
-console.log(highlightWord(process.argv[2] ?? "color"));
+if (process.argv[2]) {
+    console.log(highlightWord(process.argv[2]));
+} else {
+    for (const word of Object.keys(dictionary)) {
+        highlightWord(word);
+        total++
+    }
+    console.log({mismatches, total})
+}
 
 //console.log(soundsForWord(process.argv[2] ?? "color", true))

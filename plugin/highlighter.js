@@ -66,8 +66,7 @@ async function highlightText() {
                 expectedSounds.add("Ø");
     
                 const lastSound = attributedEnglish[attributedEnglish.length - 1];
-                const soundBeforeLast = attributedEnglish[attributedEnglish.length - 2];
-                if (lastSound && lastSound !== soundBeforeLast) {
+                if (lastSound && ipa.length < (english.length - i)) {
                     expectedSounds.add(lastSound);
                 }
             }

@@ -49,7 +49,7 @@ function scaleHistogram(histogram) {
         let total = [...Object.values(hist)].reduce((total, value) => total + value, 0);
         for (const [innerChar, value] of Object.entries(hist)) {
             const percentage = value * 100 / total;
-            if (percentage >= 1) {
+            if (percentage >= 0.1) {
                 innerScaled[innerChar] = percentage;
             }
         }
